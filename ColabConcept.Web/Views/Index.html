@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" data-ng-app="app">
+<head>
+    <title>Colab Concept</title>
+    <link href="content/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body data-ng-controller="demo">
+    <nav class="navbar navbar-default" role="navigation">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">ColabConcept</a>
+
+            </div>
+            <p class="navbar-text navbar-right">{{userCount}} Signed in as @Model.UserName</p>
+        </div>
+
+    </nav>
+    <div class="container">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <span style="font-size: 2.0em; display: inline-block;"> Products</span>
+                <button class="btn btn-success pull-right" style="margin-top: 0.2em" data-ng-click="createProduct()" data-ng-disabled="!canCreateProduct()"><i class="glyphicon glyphicon-plus"></i></button>
+            </div>
+        </div>
+        <div class="panel panel-default" data-ng-show="!canCreateProduct()">
+            <div class="panel-body">
+                <form>
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input class="form-control" data-ng-model="new.name" />
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input class="form-control" data-ng-model="new.description" />
+                    </div>
+                    <button class="btn btn-primary" data-ng-click="addProduct(new)" data-ng-disabled="!canAddProduct(new)">create</button>
+                    <button class="btn btn-link" data-ng-click="cancelAddProduct()">cancel</button>
+                </form>
+            </div>
+        </div>
+        <div class="panel panel-default">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>
+                            Name
+                        </th>
+                        <th>
+                            Description
+                        </th>
+                        <th>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-ng-repeat="product in products">
+                        <td style="vertical-align: middle">
+                            {{product.name}}
+                        </td>
+                        <td style="vertical-align: middle">
+                            {{product.description}}
+                        </td>
+                        <td class="text-right">
+                            <div data-ng-show="!product.isEditing">
+                                <a class="btn btn-link" data-ng-click="edit(product)">edit</a>
+                                <a class="btn btn-link" data-ng-click="delete(product)">delete</a>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="scripts/jquery-1.9.0.min.js"></script>
+    <script src="scripts/jquery.signalR-2.1.0.min.js"></script>
+    <script src="signalr/hubs"></script>
+    <script src="scripts/bootstrap.min.js"></script>
+    <script src="scripts/angular.min.js"></script>
+    <script src="scripts/app/module.js"></script>
+</body>
+</html>
