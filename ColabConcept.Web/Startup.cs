@@ -16,6 +16,7 @@ namespace ColabConcept.Web
         {
             app.MapSignalR();
             app.UseNancy();
+            
 
 
         }

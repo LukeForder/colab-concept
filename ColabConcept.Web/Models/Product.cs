@@ -12,13 +12,7 @@ namespace ColabConcept.Web.Models
             get;
             set;
         }
-
-        public Guid Version
-        {
-            get;
-            set;
-        }
-
+        
         public string Name
         {
             get;
@@ -44,7 +38,7 @@ namespace ColabConcept.Web.Models
             if (other == null)
                 return false;
 
-            if (other.Id == Guid.Empty || this.Id == Guid.Empty)
+            if (other.Id == default(Guid) || this.Id == default(Guid))
                 return false;
 
             return other.Id == this.Id;
