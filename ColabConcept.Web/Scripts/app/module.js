@@ -55,9 +55,15 @@ var app = angular.module("app",
                     this.editedBy = dto.LockedBy
                 };
 
+                Product.prototype.editedByMe = function(id) {
+                    return this.isEditing && this.editedBy == id;
+                }
+
                 var proxy;
 
                 var initialize = function () {
+
+                    console.log('initialize');
                 
                     var connection = $.hubConnection();
                     proxy = connection.createHubProxy('products');
@@ -123,6 +129,28 @@ var app = angular.module("app",
                             $rootScope.$broadcast('products::beginEdit', message);
                         });
 
+                    proxy.on(
+                        'commitEdit',
+                        function (message) {
+                            $rootScope.$broadcast(
+                                'products::saveEdit',
+                                {
+                                    id: message.product.Id,
+                                    name: message.product.Name,
+                                    description: message.product.Description,
+                                    lockedBy: message.product.LockedBy
+                                });
+                        });
+
+                    proxy.on(
+                        'productUnlocked',
+                        function (message) {
+                            $rootScope.$broadcast(
+                               'products::unlocked',
+                               {
+                                   id: message,
+                               });
+                        });
                 };
 
                 var saveProduct = function (product) {
@@ -157,6 +185,29 @@ var app = angular.module("app",
                     return task.promise;
                 };
 
+                var saveEdit = function (product) {
+                    var task = $q.defer();
+                    
+                    var dto = {
+                        id: product.id,
+                        name: product.name,
+                        description: product.description,
+                        lockedBy: product.lockedBy
+                    };
+                    
+
+                    proxy.invoke('commitEdit', dto).done(
+                            function () {
+                                task.resolve();
+                            }).fail(
+                            function (error) {
+                                console.log(error);
+                                task.reject();
+                            });
+
+                    return task.promise;
+                };
+
                 var removeProduct = function(product) {
                     var task = $q.defer();
                     proxy.invoke(
@@ -172,11 +223,29 @@ var app = angular.module("app",
                     return task.promise;
                 };
 
+                
+                var cancelEdit = function (product) {
+                    var task = $q.defer();
+                    proxy.invoke(
+                        'cancelEdit', product.id).done(
+                            function () {
+                                task.resolve();
+                            }).fail(
+                            function (error) {
+                                console.log(error);
+                                task.reject();
+                            });
+
+                    return task.promise;
+                }
+
                 return {
                     initialize: initialize,
                     saveProduct: saveProduct,
                     removeProduct: removeProduct,
-                    editProduct: editProduct
+                    editProduct: editProduct,
+                    saveEdit: saveEdit,
+                    cancelEdit: cancelEdit
                 };
             }
         ]
@@ -221,8 +290,20 @@ var app = angular.module("app",
                              addingProduct = false;
                          });                     
                  };
+                 $scope.save = function (product) {
+                     notificationsService.saveEdit(product);
+                 };
                  $scope.delete = function (product) {
                      notificationsService.removeProduct(product);
+                 };
+                 $scope.cancel = function (product) {
+                     if (product.memento) {
+                         product.name = product.memento.name;
+                         product.description = product.memento.description;
+                         product.lockedBy = product.memento.lockedBy;
+                     }
+
+                     notificationsService.cancelEdit(product);
                  };
                  $scope.$on('system::connected', function ($event, message) {
                      $scope.$apply(function () {
@@ -256,6 +337,26 @@ var app = angular.module("app",
                          $scope.messages.push(m);
                      });
                  });
+                 $scope.$on(
+                     'products::saveEdit',
+                     function ($event, message) {
+                         var product = _.findWhere($scope.products, { id: message.id });
+                         product.description = message.description;
+                         product.name = message.name;
+                         product.lockedBy = message.lockedBy;
+                         product.isEditing = false;
+                         product.memento = undefined;
+                         $scope.$apply();
+                     });
+                 $scope.$on(
+                    'products::unlocked',
+                    function ($event, message) {
+                        $scope.$apply(function () {
+                            var product = _.findWhere($scope.products, { id: message.id });
+                            product.lockedBy = null;
+                            product.isEditing = false;
+                        });
+                    });
 
                  $scope.$on(
                      'products::beginEdit',
@@ -264,8 +365,10 @@ var app = angular.module("app",
                          if (product) {
                              $scope.$apply(
                                  function () {
+                                     
                                      product.isEditing = true;
                                      product.editedBy = message.editedBy;
+                                     product.memento = product;
                                  });
                          }
                      });

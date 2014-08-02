@@ -84,14 +84,17 @@
                         </tr>
                     </thead>
                     <tbody>
+
                         <tr data-ng-repeat="product in products" class="product" data-ng-class="{danger: product.deleted, warning: product.isEditing && product.editedBy !== id}">
                             <td style="vertical-align: middle">
-                                <span data-ng-hide="product.isEditing && product.editedBy === id"> {{product.name}} </span>
-                                <input data-ng-show="product.isEditing && product.editedBy === id" data-ng-model="product.name" class="form-control" />
+                               
+                                <input data-ng-show="product.editedByMe(id)" data-ng-model="product.name" class="form-control" />
+                                <span data-ng-hide="product.editedByMe(id)"> {{product.name}} </span>
                             </td>
                             <td style="vertical-align: middle">
-                                <span data-ng-hide="product.isEditing && product.editedBy === id"> {{product.description}} </span>
-                                <input data-ng-show="product.isEditing && product.editedBy === id" data-ng-model="product.description" class="form-control" />
+                                <input data-ng-show="product.editedByMe(id)" data-ng-model="product.description" class="form-control" />
+
+                                <span data-ng-hide="product.editedByMe(id)"> {{product.description}} </span>
                             </td>
                             <td class="text-right">
                                 <div data-ng-show="!product.isEditing && !product.deleted">

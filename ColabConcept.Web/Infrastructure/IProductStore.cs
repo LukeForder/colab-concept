@@ -15,10 +15,14 @@ namespace ColabConcept.Web.Infrastructure
 
         bool LockProduct(Guid productId, string lockedBy);
 
+        bool UnlockProduct(Guid productId, string lockedBy);
+
         bool Remove(Product product);
 
         Product Get(Guid id);
 
         IEnumerable<Product> GetAll();
+
+        IEnumerable<Guid> CancelEdits(string user);
     }
 }

@@ -1,9 +1,11 @@
 ﻿using ColabConcept.Web.Models;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SQLite;
 using System.Linq;
 using System.Runtime.Caching;
+using System.Text;
 using System.Web;
 
 namespace ColabConcept.Web.Infrastructure
@@ -60,7 +62,7 @@ namespace ColabConcept.Web.Infrastructure
         {
             using (var command = _connection.CreateCommand())
             {
-                command.CommandText = "UPDATE Product SET Name = ?, Description = ?, LockedBy = NULL WHERE Id = ?";
+                command.CommandText = "UPDATE Product SET Name = ?, Description = ?, LockedBy = NULL WHERE Id = ? and LockedBy = ?";
                 command.CommandType = System.Data.CommandType.Text;
 
                 var idParameter = command.CreateParameter();
@@ -71,12 +73,16 @@ namespace ColabConcept.Web.Infrastructure
 
                 var descriptionParameter = command.CreateParameter();
                 descriptionParameter.Value = product.Description;
-                
+
+                var lockedByParameter = command.CreateParameter();
+                lockedByParameter.Value = product.LockedBy;
+
                 command.Parameters.AddRange(
                     new SQLiteParameter[] {
                         nameParameter,
                         descriptionParameter,
-                        idParameter
+                        idParameter,
+                        lockedByParameter
                     });
 
                 return command.ExecuteNonQuery() == 1;
@@ -129,8 +135,6 @@ namespace ColabConcept.Web.Infrastructure
                                 Description = reader.GetString(2),
                                 LockedBy = reader.IsDBNull(3) ? null : reader.GetString(3)
                             };
-
-
                     }
                 }
 
@@ -145,25 +149,11 @@ namespace ColabConcept.Web.Infrastructure
                 command.CommandText = "SELECT Id, Name, Description, LockedBy FROM Product";
                 command.CommandType = System.Data.CommandType.Text;
 
-                List<Product> products = new List<Product>();
-
                 using (var reader = command.ExecuteReader())
                 {
-
-                    while (reader.Read())
-                    {
-                        products.Add(
-                            new Product
-                            {
-                                Id = Guid.Parse(reader.GetString(0)),
-                                Name = reader.GetString(1),
-                                Description = reader.GetString(2),
-                                LockedBy = reader.IsDBNull(3) ? null : reader.GetString(3)
-                            });
-                    }
+                    return ReadProducts(reader);
                 }
 
-                return products;
             }
         }
 
@@ -184,6 +174,108 @@ namespace ColabConcept.Web.Infrastructure
                     new SQLiteParameter[] {
                         lockedByParameter,
                         idParameter
+                    });
+
+                int count = command.ExecuteNonQuery();
+
+                return count > 0;
+            }
+        }
+
+        public IEnumerable<Guid> CancelEdits(string user)
+        {
+            //no sprocs meh
+            List<Product> products;
+
+            using (var queryCommand = _connection.CreateCommand())
+            {
+                queryCommand.CommandText = "SELECT Id, Name, Description, LockedBy FROM Product WHERE LockedBy = ?";
+                queryCommand.CommandType = CommandType.Text;
+
+                var lockedByParameter = queryCommand.CreateParameter();
+                lockedByParameter.Value = user;
+                queryCommand.Parameters.Add(lockedByParameter);
+                                
+                using (var reader = queryCommand.ExecuteReader())
+                {
+                     products = ReadProducts(reader);
+                }
+            }
+
+            using (var updateCommand = _connection.CreateCommand())
+            {
+                StringBuilder parameterisedUpdateStatement = new StringBuilder("UPDATE Product SET LockedBy = NULL WHERE Id IN (");
+
+                parameterisedUpdateStatement.Append(
+                    string.Join(",",
+                        Enumerable
+                        .Range(0, products.Count)
+                        .Select(x => "?")
+                        .ToList())
+                    );
+
+                parameterisedUpdateStatement.Append(")");
+
+                updateCommand.CommandType = CommandType.Text;
+                updateCommand.CommandText = parameterisedUpdateStatement.ToString();
+
+                updateCommand.Parameters.AddRange(
+                    products
+                        .Select(
+                            product =>
+                            {
+                                var parameter = updateCommand.CreateParameter();
+                                parameter.Value = product.Id.ToString();
+                                return parameter;
+                            })
+                        .ToArray());
+
+                updateCommand.ExecuteNonQuery();
+            }
+
+            return 
+                products
+                .Select(x => x.Id);
+        }
+
+        private List<Product> ReadProducts(SQLiteDataReader reader)
+        {
+            List<Product> products = new List<Product>();
+
+            while (reader.Read())
+            {
+                products
+                    .Add(
+                        new Product
+                            {
+                                Id = Guid.Parse(reader.GetString(0)),
+                                Name = reader.GetString(1),
+                                Description = reader.GetString(2),
+                                LockedBy = reader.IsDBNull(3) ? null : reader.GetString(3)
+                            });
+                    
+            }
+
+            return products;
+        }
+
+        public bool UnlockProduct(Guid productId, string lockedBy)
+        {
+            using (var command = _connection.CreateCommand())
+            {
+                command.CommandText = "UPDATE Product SET LockedBy = NULL WHERE Id = ? AND LockedBy = ?";
+                command.CommandType = System.Data.CommandType.Text;
+
+                var idParameter = command.CreateParameter();
+                idParameter.Value = productId.ToString();
+
+                var lockedByParameter = command.CreateParameter();
+                lockedByParameter.Value = lockedBy.ToString();
+
+                command.Parameters.AddRange(
+                    new SQLiteParameter[] {
+                        idParameter,
+                        lockedByParameter
                     });
 
                 int count = command.ExecuteNonQuery();

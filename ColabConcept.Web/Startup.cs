@@ -1,6 +1,7 @@
 ﻿using ColabConcept.Web.Infrastructure;
 using Microsoft.AspNet.SignalR;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 using Owin;
 using System;
 using System.Collections.Generic;

@@ -37,11 +37,16 @@ namespace ColabConcept.Web.Hubs
         {
             Interlocked.Add(ref _clients, -1);
 
+            foreach (var productId in new ProductStore().CancelEdits(this.Context.ConnectionId))
+            {
+                PublishProductUnlocked(productId);
+            }
+
             Clients.All.left(new { id = this.Context.ConnectionId, count = _clients });
 
             return base.OnDisconnected();
         }
-
+        
         public override System.Threading.Tasks.Task OnReconnected()
         {
             Interlocked.Add(ref _clients, 1);
@@ -56,6 +61,20 @@ namespace ColabConcept.Web.Hubs
             Clients.Others.joined(new { id = this.Context.ConnectionId, count = _clients });
 
             return base.OnReconnected();
+        }
+
+        public void CancelEdit(Guid productId)
+        {
+            if (new ProductStore().UnlockProduct(productId, this.Context.ConnectionId))
+            {
+                PublishProductUnlocked(productId);
+            }
+
+        }
+
+        private void PublishProductUnlocked(Guid productId)
+        {
+            Clients.All.productUnlocked(productId);
         }
 
         public void BeginEdit(Guid productId)
@@ -77,18 +96,22 @@ namespace ColabConcept.Web.Hubs
 
         public void CommitEdit(Product product)
         {
-            new
-                ProductStore()
-                .Update(product);
+            product.LockedBy = this.Context.ConnectionId;
 
-            Clients
-              .All
-              .commitEdit(
-              new
-              {
-                  editedBy = Context.ConnectionId,
-                  product = product
-              });
+            if (new
+                ProductStore()
+                .Update(product))
+            {
+
+                Clients
+                  .All
+                  .commitEdit(
+                  new
+                  {
+                      editedBy = Context.ConnectionId,
+                      product = product
+                  });
+            }
         }
 
         public void RemoveProduct(Guid productId)
