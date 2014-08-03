@@ -82,6 +82,12 @@
     <Reference Include="Owin">
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
+    <Reference Include="SimpleInjector">
+      <HintPath>..\packages\SimpleInjector.2.5.2\lib\net45\SimpleInjector.dll</HintPath>
+    </Reference>
+    <Reference Include="SimpleInjector.Diagnostics">
+      <HintPath>..\packages\SimpleInjector.2.5.2\lib\net45\SimpleInjector.Diagnostics.dll</HintPath>
+    </Reference>
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Data.SQLite">
       <HintPath>..\packages\System.Data.SQLite.Core.1.0.93.0\lib\net451\System.Data.SQLite.dll</HintPath>
@@ -494,6 +500,7 @@
     <Compile Include="Infrastructure\CamelCaseJsonSerializer.cs" />
     <Compile Include="Infrastructure\IProductStore.cs" />
     <Compile Include="Infrastructure\ProductStore.cs" />
+    <Compile Include="Infrastructure\SimpleInjectorHubActivator.cs" />
     <Compile Include="Models\Product.cs" />
     <Compile Include="Modules\DefaultModule.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

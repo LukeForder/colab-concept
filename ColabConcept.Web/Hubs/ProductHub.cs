@@ -15,7 +15,13 @@ namespace ColabConcept.Web.Hubs
     [HubName("products")]
     public class ProductHub : Hub
     {
+        public ProductHub(IProductStore productStore)
+        {
+            _productStore = productStore;
+        }
+
         private static int _clients;
+        private readonly IProductStore _productStore;
 
         public override System.Threading.Tasks.Task OnConnected()
         {
@@ -65,7 +71,7 @@ namespace ColabConcept.Web.Hubs
 
         public void CancelEdit(Guid productId)
         {
-            if (new ProductStore().UnlockProduct(productId, this.Context.ConnectionId))
+            if (_productStore.UnlockProduct(productId, this.Context.ConnectionId))
             {
                 PublishProductUnlocked(productId);
             }
@@ -79,7 +85,7 @@ namespace ColabConcept.Web.Hubs
 
         public void BeginEdit(Guid productId)
         {
-            if (new ProductStore().LockProduct(productId, Context.ConnectionId))
+            if (_productStore.LockProduct(productId, Context.ConnectionId))
             {
                 Clients
                 .All
@@ -98,9 +104,7 @@ namespace ColabConcept.Web.Hubs
         {
             product.LockedBy = this.Context.ConnectionId;
 
-            if (new
-                ProductStore()
-                .Update(product))
+            if (_productStore.Update(product))
             {
 
                 Clients
@@ -117,7 +121,7 @@ namespace ColabConcept.Web.Hubs
         public void RemoveProduct(Guid productId)
         {
             bool removed = 
-                new ProductStore()
+                _productStore
                    .Remove(new Product
                    {
                        Id = productId
@@ -155,7 +159,7 @@ namespace ColabConcept.Web.Hubs
 
         private Product GetFromRepository(Guid productId)
         {
-            return new ProductStore().Get(productId);
+            return _productStore.Get(productId);
         }
 
     }
