@@ -31,7 +31,7 @@ namespace ColabConcept.Web.Hubs
             {
                 id = this.Context.ConnectionId,
                 count = _clients,
-                products = new ProductStore().GetAll()
+                products = _productStore.GetAll()
             });
 
             Clients.Others.joined(new { id = this.Context.ConnectionId, count = _clients });
@@ -43,7 +43,7 @@ namespace ColabConcept.Web.Hubs
         {
             Interlocked.Add(ref _clients, -1);
 
-            foreach (var productId in new ProductStore().CancelEdits(this.Context.ConnectionId))
+            foreach (var productId in _productStore.CancelEdits(this.Context.ConnectionId))
             {
                 PublishProductUnlocked(productId);
             }
@@ -61,7 +61,7 @@ namespace ColabConcept.Web.Hubs
             {
                 id = this.Context.ConnectionId,
                 count = _clients,
-                products = new ProductStore().GetAll()
+                products =_productStore.GetAll()
             });
 
             Clients.Others.joined(new { id = this.Context.ConnectionId, count = _clients });
@@ -147,8 +147,7 @@ namespace ColabConcept.Web.Hubs
         {
             product.Id = Guid.NewGuid();
 
-            new
-                ProductStore()
+            _productStore
                 .Add(product);
 
             IHubContext context = GlobalHost.ConnectionManager.GetHubContext<ProductHub>();
