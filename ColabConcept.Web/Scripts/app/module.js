@@ -109,7 +109,10 @@ var app = angular.module("app",
                         console.log('addProduct invoked.');
                         $rootScope.$broadcast(
                             'products::new',
-                             new Product(message));
+                            {
+                                addedBy: message.addedBy,
+                                product: new Product(message.product)
+                            });
                     });
 
                     proxy.on(
@@ -384,14 +387,15 @@ var app = angular.module("app",
                  $scope.$on('products::new', function ($event, message) {
                      console.log({ message: message });
                    
-                     var product = message;
+                     var product = message.product;
 
                      $scope.$apply(function () {
-
-                         $scope.new = {
-                             name: null,
-                             description: null
-                         };
+                         if ($scope.id === message.addedBy) {
+                             $scope.new = {
+                                 name: null,
+                                 description: null
+                             };
+                         }
 
                          $scope.products.push(product);
                      });

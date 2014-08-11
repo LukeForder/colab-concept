@@ -152,7 +152,12 @@ namespace ColabConcept.Web.Hubs
 
             IHubContext context = GlobalHost.ConnectionManager.GetHubContext<ProductHub>();
 
-            context.Clients.All.addProduct(product);
+            context.Clients.All.addProduct(
+                new 
+                {
+                    addedBy = Context.ConnectionId,
+                    product = product
+                });
         }
 
 

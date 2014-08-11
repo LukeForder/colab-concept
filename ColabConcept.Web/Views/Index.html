@@ -13,9 +13,16 @@
             animation: fadeInDown 0.25s;
         }
 
+        input.hide {
+            display: none;
+        }
+
+        .ng-cloak {
+            display: none !important;
+        }
     </style>
 </head>
-<body data-ng-controller="demo">
+<body data-ng-controller="demo" ng-cloak>
     <nav class="navbar navbar-default" role="navigation">
         <div class="container-fluid">
             <div class="navbar-header">
@@ -88,13 +95,13 @@
                         <tr data-ng-repeat="product in products" class="product" data-ng-class="{danger: product.deleted, warning: product.isEditing && product.editedBy !== id}">
                             <td style="vertical-align: middle">
                                
-                                <input data-ng-show="product.editedByMe(id)" data-ng-model="product.name" class="form-control" />
-                                <span data-ng-hide="product.editedByMe(id)"> {{product.name}} </span>
+                                <input data-ng-class="{hide: !product.editedByMe(id)}" data-ng-model="product.name" class="form-control" />
+                                <span data-ng-class="{'hide': product.editedByMe(id)}"> {{product.name}} </span>
                             </td>
                             <td style="vertical-align: middle">
-                                <input data-ng-show="product.editedByMe(id)" data-ng-model="product.description" class="form-control" />
+                                <input data-ng-class="{hide: !product.editedByMe(id)}" data-ng-model="product.description" class="form-control" />
 
-                                <span data-ng-hide="product.editedByMe(id)"> {{product.description}} </span>
+                                <span data-ng-class="{'hide':product.editedByMe(id)}"> {{product.description}} </span>
                             </td>
                             <td class="text-right">
                                 <div data-ng-show="!product.isEditing && !product.deleted">

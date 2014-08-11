@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web;
 
 namespace ColabConcept.Web.Models
 {
@@ -12,7 +11,7 @@ namespace ColabConcept.Web.Models
             get;
             set;
         }
-        
+
         public string Name
         {
             get;
