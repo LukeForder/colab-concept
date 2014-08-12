@@ -63,9 +63,7 @@ namespace ColabConcept.Web.Hubs
                 count = _clients,
                 products =_productStore.GetAll()
             });
-
-            Clients.Others.joined(new { id = this.Context.ConnectionId, count = _clients });
-
+            
             return base.OnReconnected();
         }
 
