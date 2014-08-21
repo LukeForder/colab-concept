@@ -2,14 +2,12 @@
 using ColabConcept.Web.Infrastructure;
 using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
 using Owin;
 using SimpleInjector;
+using Microsoft.Owin.Security;
+using Microsoft.Owin.Security.Cookies;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
+using Microsoft.Owin;
 
 namespace ColabConcept.Web
 {
@@ -26,6 +24,14 @@ namespace ColabConcept.Web
             SimpleInjectorHubActivator activator = new SimpleInjectorHubActivator(container);
 
             GlobalHost.DependencyResolver.Register(typeof(IHubActivator), () => activator);
+
+            CookieAuthenticationOptions options = new CookieAuthenticationOptions();
+            options.AuthenticationType = "COOKIE";
+            options.ExpireTimeSpan = new TimeSpan(1, 0, 0, 0);
+            options.LoginPath = new PathString("/login");
+            options.SlidingExpiration = true;
+
+            app.UseCookieAuthentication(options);
 
             app.MapSignalR();
             app.UseNancy();

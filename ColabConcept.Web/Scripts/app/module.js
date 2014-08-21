@@ -173,7 +173,6 @@ var app = angular.module("app",
 
                     return task.promise;
                 };
-
                 var editProduct = function (product) {
                     var task = $q.defer();
                     proxy.invoke('beginEdit',product.id).done(

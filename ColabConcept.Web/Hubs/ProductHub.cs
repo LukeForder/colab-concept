@@ -4,6 +4,7 @@ using Microsoft.AspNet.SignalR;
 using Microsoft.AspNet.SignalR.Hubs;
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -20,47 +21,68 @@ namespace ColabConcept.Web.Hubs
             _productStore = productStore;
         }
 
-        private static int _clients;
+        private static ConcurrentDictionary<string, int> _connectedClients = new ConcurrentDictionary<string,int>();
+
         private readonly IProductStore _productStore;
 
         public override System.Threading.Tasks.Task OnConnected()
         {
-            Interlocked.Add(ref _clients, 1);
+            string id = this.Context.User.Identity.Name;
+
+            int connectionCount = _connectedClients.AddOrUpdate(id, 1, (k, v) => v + 1);
 
             Clients.Caller.connected(new
             {
-                id = this.Context.ConnectionId,
-                count = _clients,
+                id = id,
+                count = _connectedClients.Count,
                 products = _productStore.GetAll()
             });
 
-            Clients.Others.joined(new { id = this.Context.ConnectionId, count = _clients });
+            if (connectionCount == 1)
+                Clients.Others.joined(new
+                {
+                    id = id,
+                    count = _connectedClients.Count
+                });
 
             return base.OnConnected();
         }
 
-        public override System.Threading.Tasks.Task OnDisconnected()
+        public override System.Threading.Tasks.Task OnDisconnected(bool stopCalled)
         {
-            Interlocked.Add(ref _clients, -1);
+            string id = this.Context.User.Identity.Name;
 
-            foreach (var productId in _productStore.CancelEdits(this.Context.ConnectionId))
+            int connectionCount;
+
+            if (_connectedClients.TryGetValue(id, out connectionCount))
+            {
+                if (connectionCount == 1)
+                {
+                    _connectedClients.TryRemove(id, out connectionCount);
+                }
+                else if (!_connectedClients.TryUpdate(id, connectionCount - 1, connectionCount))
+                {
+                    // TODO: log
+                }
+            }
+
+            foreach (var productId in _productStore.CancelEdits(id))
             {
                 PublishProductUnlocked(productId);
             }
 
-            Clients.All.left(new { id = this.Context.ConnectionId, count = _clients });
+            if (connectionCount == 1)
+                Clients.All.left(new { id = id, count = _connectedClients.Count });
 
-            return base.OnDisconnected();
+            return base.OnDisconnected(stopCalled);
         }
         
         public override System.Threading.Tasks.Task OnReconnected()
         {
-            Interlocked.Add(ref _clients, 1);
-
             Clients.Caller.reconnected(new
             {
-                id = this.Context.ConnectionId,
-                count = _clients,
+                id = this.Context.User.Identity.Name,
+                count = _connectedClients.Count,
                 products =_productStore.GetAll()
             });
             
@@ -69,7 +91,7 @@ namespace ColabConcept.Web.Hubs
 
         public void CancelEdit(Guid productId)
         {
-            if (_productStore.UnlockProduct(productId, this.Context.ConnectionId))
+            if (_productStore.UnlockProduct(productId, this.Context.User.Identity.Name))
             {
                 PublishProductUnlocked(productId);
             }
@@ -83,14 +105,14 @@ namespace ColabConcept.Web.Hubs
 
         public void BeginEdit(Guid productId)
         {
-            if (_productStore.LockProduct(productId, Context.ConnectionId))
+            if (_productStore.LockProduct(productId, this.Context.User.Identity.Name))
             {
                 Clients
                 .All
                 .beginEdit(
                 new
                 {
-                    editedBy = this.Context.ConnectionId,
+                    editedBy = this.Context.User.Identity.Name,
                     product = productId.ToString()
                 });
 
@@ -100,7 +122,7 @@ namespace ColabConcept.Web.Hubs
 
         public void CommitEdit(Product product)
         {
-            product.LockedBy = this.Context.ConnectionId;
+            product.LockedBy = this.Context.User.Identity.Name;
 
             if (_productStore.Update(product))
             {
@@ -110,7 +132,7 @@ namespace ColabConcept.Web.Hubs
                   .commitEdit(
                   new
                   {
-                      editedBy = Context.ConnectionId,
+                      editedBy = this.Context.User.Identity.Name,
                       product = product
                   });
             }
@@ -135,8 +157,8 @@ namespace ColabConcept.Web.Hubs
                     .removeProduct(
                         new 
                         { 
-                            Id = productId, 
-                            By = Context.ConnectionId 
+                            Id = productId,
+                            By = this.Context.User.Identity.Name
                         });
             }
         }
@@ -153,7 +175,7 @@ namespace ColabConcept.Web.Hubs
             context.Clients.All.addProduct(
                 new 
                 {
-                    addedBy = Context.ConnectionId,
+                    addedBy = this.Context.User.Identity.Name,
                     product = product
                 });
         }
