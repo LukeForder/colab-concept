@@ -31,13 +31,17 @@ namespace ColabConcept.Web.Hubs
 
             int connectionCount = _connectedClients.AddOrUpdate(id, 1, (k, v) => v + 1);
 
-            Clients.Caller.connected(new
-            {
+            // send existed products/user count back to the client that just joined
+            Clients.Caller.connected(new {
                 id = id,
                 count = _connectedClients.Count,
-                products = _productStore.GetAll()
+                products = 
+                    _productStore
+                    .GetAll()
+                    .Select(product => ProductAsCamelCaseDto(product))
             });
 
+            // notify the others that a new client has joined
             if (connectionCount == 1)
                 Clients.Others.joined(new
                 {
@@ -83,7 +87,7 @@ namespace ColabConcept.Web.Hubs
             {
                 id = this.Context.User.Identity.Name,
                 count = _connectedClients.Count,
-                products =_productStore.GetAll()
+                products =_productStore.GetAll().Select(p => ProductAsCamelCaseDto(p))
             });
             
             return base.OnReconnected();
@@ -133,7 +137,7 @@ namespace ColabConcept.Web.Hubs
                   new
                   {
                       editedBy = this.Context.User.Identity.Name,
-                      product = product
+                      product = ProductAsCamelCaseDto(product)
                   });
             }
         }
@@ -176,7 +180,7 @@ namespace ColabConcept.Web.Hubs
                 new 
                 {
                     addedBy = this.Context.User.Identity.Name,
-                    product = product
+                    product = ProductAsCamelCaseDto(product)
                 });
         }
 
@@ -184,6 +188,18 @@ namespace ColabConcept.Web.Hubs
         private Product GetFromRepository(Guid productId)
         {
             return _productStore.Get(productId);
+        }
+
+        // work around the Signalr serialization bug in v2
+        private object ProductAsCamelCaseDto(Product product)
+        {
+            return new
+            {
+                id = product.Id,
+                description = product.Description,
+                lockedBy = product.LockedBy,
+                name = product.Name
+            };
         }
 
     }

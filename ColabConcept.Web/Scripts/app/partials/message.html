@@ -1,0 +1,12 @@
+﻿<div class="row"
+     style="padding: 10px;"
+      data-ng-class="{'list-group-item-info': kind === 'info', 'list-group-item-success': kind === 'success', 'list-group-item-warning': kind === 'warning'}">
+    <span class="col-lg-1">
+        <i class="glyphicon"
+           data-ng-class="{'glyphicon-info-sign': kind === 'info', 'glyphicon-heart-empty': kind === 'success', 'glyphicon-exclamation-sign': kind === 'warning'}">
+        </i>
+    </span>
+    <span class="col-lg-10">
+        <b>{{ago}}</b>. {{content}}
+    </span>
+</div>

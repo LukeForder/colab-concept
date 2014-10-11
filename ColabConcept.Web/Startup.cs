@@ -8,6 +8,7 @@ using Microsoft.Owin.Security;
 using Microsoft.Owin.Security.Cookies;
 using System;
 using Microsoft.Owin;
+using Newtonsoft.Json;
 
 namespace ColabConcept.Web
 {
@@ -24,7 +25,6 @@ namespace ColabConcept.Web
             SimpleInjectorHubActivator activator = new SimpleInjectorHubActivator(container);
 
             GlobalHost.DependencyResolver.Register(typeof(IHubActivator), () => activator);
-
             CookieAuthenticationOptions options = new CookieAuthenticationOptions();
             options.AuthenticationType = "COOKIE";
             options.ExpireTimeSpan = new TimeSpan(1, 0, 0, 0);

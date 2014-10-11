@@ -5,50 +5,41 @@
     <link href="content/bootstrap.min.css" rel="stylesheet" />
     <link href="content/animate.min.css" rel="stylesheet" />
     <style>
-        .product.ng-leave, .product.ng-leave * {
-            animation: fadeOut 0.25s;
-        }
-
-        .product.ng-enter, .product.ng-enter * {
-            animation: fadeInDown 0.25s;
-        }
-
-        input.hide {
-            display: none;
-        }
-
+       
         .ng-cloak {
             display: none !important;
         }
+        .message-list-item {
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        input.ng-animate { -webkit-animation: none 0s; }
     </style>
 </head>
-<body data-ng-controller="demo" class="ng-cloak">
+<body data-ng-controller="demo as ctrl" class="ng-cloak">
     <nav class="navbar navbar-default" role="navigation">
         <div class="container-fluid">
             <div class="navbar-header">
                 <a class="navbar-brand" href="#">ColabConcept</a>
 
             </div>
-            <p class="navbar-text navbar-right">{{userCount}} Signed in, you are <b>{{id}}</b></p>
+            <p class="navbar-text navbar-right">{{ctrl.userCount}} Signed in, you are <b>{{ctrl.signOnId}}</b></p>
         </div>
 
     </nav>
     <div style="margin: 20px;">
         <div class="col-lg-3">
-            <div class="panel panel-default" data-ng-show="messages.length > 0">
+            <div class="panel panel-default" data-ng-show="ctrl.messages.length > 0">
                 <div class="panel-heading">
                     Messages
                 </div>
                 <ul class="list-group">
-                    <li class="list-group-item" data-ng-class="{'list-group-item-info': message.kind === 'info', 'list-group-item-success': message.kind === 'success', 'list-group-item-warning': message.kind === 'warning'}" data-ng-repeat="message in messages">
-                        <span class="row">
-                            <span class="col-lg-1">
-                                <i class="glyphicon" data-ng-class="{'glyphicon-info-sign': message.kind === 'info', 'glyphicon-heart-empty': message.kind === 'success', 'glyphicon-exclamation-sign': message.kind === 'warning'}"></i>
-                            </span>
-                            <span class="col-lg-10">
-                                <b>{{message.ago}}</b>, {{message.content}}
-                            </span>
-                        </span>
+                    <li class="list-group-item message-list-item"
+                        data-ng-repeat="msg in ctrl.messages"
+                        data-message
+                        data-kind="msg.kind"
+                        data-content="msg.content"
+                        data-ago="msg.ago()">
                     </li>
                 </ul>
             </div>
@@ -57,22 +48,31 @@
             <div class="panel panel-default">
                 <div class="panel-heading">
                     <span style="font-size: 2.0em; display: inline-block;"> Products</span>
-                    <button class="btn btn-success pull-right" style="margin-top: 0.2em" data-ng-click="createProduct()" data-ng-disabled="!canCreateProduct()"><i class="glyphicon glyphicon-plus"></i></button>
+                    <button class="btn btn-success pull-right"
+                            style="margin-top: 0.2em" 
+                            data-ng-click="ctrl.createProduct()" 
+                            data-ng-disabled="!ctrl.canCreateProduct()">
+                        <i class="glyphicon glyphicon-plus"></i>
+                    </button>
                 </div>
             </div>
-            <div class="panel panel-default" data-ng-show="!canCreateProduct()">
+            <div class="panel panel-default" data-ng-show="!ctrl.canCreateProduct()">
                 <div class="panel-body">
-                    <form>
+                    <form name="newProduct">
                         <div class="form-group">
                             <label>Name</label>
-                            <input class="form-control" data-ng-model="new.name" />
+                            <input class="form-control" data-ng-model="ctrl.newProduct.name" required />
                         </div>
                         <div class="form-group">
                             <label>Description</label>
-                            <input class="form-control" data-ng-model="new.description" />
+                            <input class="form-control" data-ng-model="ctrl.newProduct.description" required />
                         </div>
-                        <button class="btn btn-primary" data-ng-click="addProduct(new)" data-ng-disabled="!canAddProduct(new)">create</button>
-                        <button class="btn btn-link" data-ng-click="cancelAddProduct()">cancel</button>
+                        <button class="btn btn-primary"
+                                data-ng-click="ctrl.addProduct(ctrl.newProduct)" 
+                                data-ng-disabled="newProduct.$invalid">create</button>
+
+                        <button class="btn btn-link" 
+                                data-ng-click="ctrl.cancelAddProduct()">cancel</button>
                     </form>
                 </div>
             </div>
@@ -92,32 +92,61 @@
                     </thead>
                     <tbody>
 
-                        <tr data-ng-repeat="product in products" class="product" data-ng-class="{danger: product.deleted, warning: product.isEditing && product.editedBy !== id}">
-                            <td style="vertical-align: middle">
-                               
-                                <input data-ng-class="{hide: !product.editedByMe(id)}" data-ng-model="product.name" class="form-control" />
-                                <span data-ng-class="{'hide': product.editedByMe(id)}"> {{product.name}} </span>
-                            </td>
-                            <td style="vertical-align: middle">
-                                <input data-ng-class="{hide: !product.editedByMe(id)}" data-ng-model="product.description" class="form-control" />
+                        <tr data-ng-repeat="product in ctrl.products"
+                            class="product"
+                            data-ng-class="{danger: product.getState(ctrl.signOnId) === 'deleted', warning: product.isEditing }">
+                            
+                            <td style="vertical-align: middle"
+                                ng-switch="product.getState(ctrl.signOnId)"
+                                class="animate-switch-container">
 
-                                <span data-ng-class="{'hide':product.editedByMe(id)}"> {{product.description}} </span>
+                                <input data-ng-switch-when="editedByMe"
+                                       data-ng-model="product.name"
+                                       class="form-control" />
+
+                                <span data-ng-switch-default> {{product.name}} </span>
                             </td>
+
+                            <td style="vertical-align: middle"
+                                class="animate-switch-container"
+                                ng-switch="product.getState(ctrl.signOnId)">
+
+                                <input data-ng-switch-when="editedByMe"
+                                       data-ng-model="product.description"
+                                       class="form-control" />
+
+                                <span data-ng-switch-default> {{product.description}} </span>
+
+                            </td>
+
                             <td class="text-right">
-                                <div data-ng-show="!product.isEditing && !product.deleted">
-                                    <a class="btn btn-link" data-ng-click="edit(product)">edit</a>
-                                    <a class="btn btn-link" data-ng-click="delete(product)">delete</a>
-                                </div>
-                                <div data-ng-show="product.deleted">
-                                    <span><b>deleted by {{product.deletedBy}}</b> <button class="btn btn-link" data-ng-click="removeFromList(product)"><i class="glyphicon glyphicon-remove"></i></button></span>
-                                </div>
-                                <div data-ng-show="product.isEditing && product.editedBy === id">
-                                    <a class="btn btn-link" data-ng-click="save(product)">save</a>
-                                    <a class="btn btn-link" data-ng-click="cancel(product)">cancel</a>
-                                </div>
-                                <div data-ng-show="product.isEditing && product.editedBy !== id">
-                                    <i class="glyphicon glyphicon-lock"></i> <span><b>being edited by {{product.editedBy}}</b></span>
-                                </div>
+                                <span data-ng-switch="product.getState(ctrl.signOnId)">
+
+                                    <span data-ng-switch-when="deleted">
+                                        <span>
+                                            <b>deleted by {{product.deletedBy}}</b>
+                                            <button class="btn btn-link"
+                                                    data-ng-click="ctrl.removeFromList(product)">
+                                                <i class="glyphicon glyphicon-remove"></i>
+                                            </button>
+                                        </span>
+                                    </span>
+
+                                    <span data-ng-switch-when="editedByMe">
+                                        <a class="btn btn-link" data-ng-click="ctrl.save(product)">save</a>
+                                        <a class="btn btn-link" data-ng-click="ctrl.cancel(product)">cancel</a>
+                                    </span>
+
+                                    <span data-ng-switch-when="editedByOther">
+                                        <i class="glyphicon glyphicon-lock"></i> <span><b>being edited by {{product.editedBy}}</b></span>
+                                    </span>
+
+                                    <span data-ng-switch-default>
+                                        
+                                        <a class="btn btn-link" data-ng-click="ctrl.edit(product)">edit</a>
+                                        <a class="btn btn-link" data-ng-click="ctrl.delete(product)">delete</a>
+                                    </span>
+                                </span>
                             </td>
                         </tr>
                     </tbody>
@@ -126,13 +155,18 @@
         </div>
     </div>
     <script src="scripts/moment.min.js"></script>
-    <script src="scripts/underscore-min.js"></script>
-    <script src="scripts/jquery-1.9.0.min.js"></script>
-    <script src="scripts/jquery.signalR-2.1.1.min.js"></script>
+    <script src="scripts/underscore.min.js"></script>
+    <script src="scripts/jquery-2.1.1.min.js"></script>
+    <script src="scripts/jquery.signalR-2.1.2.min.js"></script>
     <script src="signalr/hubs"></script>
     <script src="scripts/bootstrap.min.js"></script>
     <script src="scripts/angular.min.js"></script>
     <script src="scripts/angular-animate.min.js"></script>
+    <script src="scripts/app/models/Product.js"></script>
+    <script src="scripts/app/services/productsService.js"></script>
+    <script src="scripts/app/services/notificationsService.js"></script>
+    <script src="scripts/app/controllers/demoController.js"></script>
+    <script src="scripts/app/directives/message.js"></script>
     <script src="scripts/app/module.js"></script>
 </body>
 </html>
